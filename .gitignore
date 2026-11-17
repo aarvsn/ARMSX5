@@ -1,0 +1,31 @@
+# Build output
+build/
+build-*/
+app/build/
+.gradle/
+local.properties
+*.apk
+*.aab
+
+# CMake / tooling
+CMakeLists.txt.user
+cmake-build-*/
+.cache/
+.cxx/
+compile_commands.json
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Vendored dependency clones (fetched by scripts/setup-deps.sh)
+externals/googletest/
+externals/vulkan-headers/
+
+# Test artifacts
+testing/
+*.log

@@ -1,0 +1,74 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK + NDK
+        uses: android-actions/setup-android@v3
+      - run: |
+          sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" > /dev/null
+          yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # Release signing uses repository secrets when configured; otherwise a
+      # debug-signed development artifact is produced and clearly labeled.
+      - name: Configure signing (optional)
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ARMSX5_SIGNING_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > /tmp/armsx5.keystore
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No signing secret configured; producing debug-signed artifact."
+          fi
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Rename artifact per variant
+        run: |
+          mkdir -p dist
+          if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk dist/armsx5-android-release.apk
+          else
+            cp android/app/build/outputs/apk/release/app-release.apk dist/armsx5-android-release-unsigned-debugkey.apk
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: armsx5-android-release
+          path: dist/*.apk
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/*.apk \
+            --title "ARMSX5 ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --prerelease

@@ -1,0 +1,44 @@
+name: native-tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  native:
+    name: Native core build + tests (Linux x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          cmake --version
+
+      - name: Configure
+        run: cmake -S . -B build/host -G Ninja -DCMAKE_BUILD_TYPE=Release -DARMSX5_BUILD_TESTS=ON
+
+      - name: Build
+        run: ninja -C build/host
+
+      - name: Run tests
+        run: ctest --test-dir build/host --output-on-failure
+
+      - name: armsx5-runner smoke test (hello.elf)
+        run: |
+          ./build/host/tests/armsx5-runner build/host/test_elfs/hello.elf | tee runner_out.txt
+          grep -q "exit_code: 42" runner_out.txt
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: armsx5-native-tests
+          path: |
+            build/host/tests/Testing/
+            runner_out.txt
+          if-no-files-found: ignore

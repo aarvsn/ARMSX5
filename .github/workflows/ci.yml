@@ -1,0 +1,14 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  native-tests:
+    uses: ./.github/workflows/native-tests.yml
+
+  android-build:
+    uses: ./.github/workflows/android-build.yml
