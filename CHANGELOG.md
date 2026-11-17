@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+### CI fixes
+
+- `ci.yml` now has the sub-workflows declare `workflow_call`, so the
+  aggregate workflow no longer fails before any job is scheduled
+  ("workflow_call event trigger is not found"); `native-tests` and
+  `android-build` run as reusable workflows and keep their manual
+  `workflow_dispatch` trigger.
+- Native and Android jobs fetch the vendored dependencies
+  (`scripts/setup-deps.sh`) before configuring, so the Vulkan headers that
+  `native/gpu` needs are present (previously the build failed on
+  `vulkan/vulkan.h: No such file or directory`).
+- Android SDK setup passes `packages: platform-tools`; the action's default
+  `tools` package no longer exists in the SDK repository and aborted setup
+  with `Failed to find package 'tools'`. The platform/build-tools/NDK/CMake
+  install now requests `platforms;android-34` and `build-tools;34.0.0`
+  explicitly.
+- `android/gradle.properties` no longer pins `org.gradle.java.home` to a
+  developer-local path; Gradle uses the JDK provided by the environment.
+- `android/gradlew` and `scripts/*.sh` are committed executable
+  (mode 100755), so `./gradlew` and the scripts run on a fresh checkout.
+
 ## 0.4.0 — 2026-11-17
 
 ### GPU

@@ -1,9 +1,8 @@
 name: android-build
 
+# Reusable workflow invoked by ci.yml (and runnable on demand).
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_call:
   workflow_dispatch:
 
 jobs:
@@ -21,11 +20,18 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default 'tools' package was removed from the SDK
+          # repository, which makes setup fail before any build runs.
+          packages: platform-tools
 
-      - name: Install NDK r27b and CMake
+      - name: Install SDK platform, NDK r27b and CMake
         run: |
-          sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" > /dev/null
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973" "cmake;3.22.1" > /dev/null
           yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Fetch vendored dependencies
+        run: scripts/setup-deps.sh
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3

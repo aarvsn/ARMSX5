@@ -1,9 +1,8 @@
 name: native-tests
 
+# Reusable workflow invoked by ci.yml (and runnable on demand).
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_call:
   workflow_dispatch:
 
 jobs:
@@ -18,6 +17,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build
           cmake --version
+
+      - name: Fetch vendored dependencies
+        run: scripts/setup-deps.sh
 
       - name: Configure
         run: cmake -S . -B build/host -G Ninja -DCMAKE_BUILD_TYPE=Release -DARMSX5_BUILD_TESTS=ON
